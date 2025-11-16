@@ -1,3 +1,11 @@
+-- Tabla de Perfiles de Usuario
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  username TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Tabla de Topics (Temas principales y subtemas)
 CREATE TABLE topics (
   id TEXT PRIMARY KEY,
@@ -37,9 +45,23 @@ CREATE TABLE exams (
 -- Row Level Security (RLS) - Los usuarios solo pueden ver sus propios datos
 
 -- Habilitar RLS en todas las tablas
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE code_snippets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para Profiles
+CREATE POLICY "Users can view their own profile"
+  ON profiles FOR SELECT
+  USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert their own profile"
+  ON profiles FOR INSERT
+  WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "Users can update their own profile"
+  ON profiles FOR UPDATE
+  USING (auth.uid() = id);
 
 -- Políticas para Topics
 CREATE POLICY "Users can view their own topics"
@@ -93,6 +115,7 @@ CREATE POLICY "Users can delete their own exams"
   USING (auth.uid() = user_id);
 
 -- Índices para mejorar el rendimiento
+CREATE INDEX idx_profiles_username ON profiles(username);
 CREATE INDEX idx_topics_user_id ON topics(user_id);
 CREATE INDEX idx_code_snippets_user_id ON code_snippets(user_id);
 CREATE INDEX idx_code_snippets_topic_id ON code_snippets(topic_id);
@@ -109,6 +132,9 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers para actualizar updated_at
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 CREATE TRIGGER update_topics_updated_at BEFORE UPDATE ON topics
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 

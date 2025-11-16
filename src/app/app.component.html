@@ -1,7 +1,7 @@
 <div class="container" [class.no-header]="!(currentUser$ | async)">
   <header *ngIf="currentUser$ | async">
     <div class="header-content">
-      <h1>Mi avance en Java - Kate</h1>
+      <h1>Mi avance en Java<span *ngIf="currentProfile$ | async as profile"> - {{ profile.username }}</span></h1>
       <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
         Salir
       </button>

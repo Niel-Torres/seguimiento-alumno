@@ -9,6 +9,7 @@ import { AuthService } from '../../services/auth.service';
 export class LoginComponent {
   email = '';
   password = '';
+  username = '';
   isSignUp = false;
   loading = false;
   errorMessage = '';
@@ -36,7 +37,7 @@ export class LoginComponent {
   }
 
   async signUp(): Promise<void> {
-    if (!this.email || !this.password) {
+    if (!this.email || !this.password || !this.username) {
       this.errorMessage = 'Por favor completa todos los campos';
       return;
     }
@@ -46,11 +47,16 @@ export class LoginComponent {
       return;
     }
 
+    if (this.username.length < 2) {
+      this.errorMessage = 'El nombre debe tener al menos 2 caracteres';
+      return;
+    }
+
     this.loading = true;
     this.errorMessage = '';
     this.successMessage = '';
 
-    const result = await this.authService.signUp(this.email, this.password);
+    const result = await this.authService.signUp(this.email, this.password, this.username);
 
     this.loading = false;
 
@@ -58,6 +64,7 @@ export class LoginComponent {
       this.successMessage = 'Cuenta creada! Revisa tu email para confirmar tu cuenta.';
       this.email = '';
       this.password = '';
+      this.username = '';
       setTimeout(() => {
         this.isSignUp = false;
         this.successMessage = '';

@@ -1,8 +1,8 @@
 <div class="login-container">
   <div class="login-card">
     <div class="logo">
-      <h1>Mi avance en Java</h1>
-      <p class="subtitle">Kate</p>
+      <h1>MyJavaTrack</h1>
+      <p class="subtitle">Seguimiento de progreso en Java</p>
     </div>
 
     <div class="tabs">
@@ -21,6 +21,19 @@
     </div>
 
     <form (ngSubmit)="isSignUp ? signUp() : signIn()">
+      <div class="form-group" *ngIf="isSignUp">
+        <label for="username">Nombre:</label>
+        <input
+          type="text"
+          id="username"
+          [(ngModel)]="username"
+          name="username"
+          placeholder="Tu nombre"
+          required
+          autocomplete="name">
+        <small>Este nombre aparecerá en tu perfil</small>
+      </div>
+
       <div class="form-group">
         <label for="email">Email:</label>
         <input
