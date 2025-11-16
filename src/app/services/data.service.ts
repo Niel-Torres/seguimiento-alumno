@@ -3,40 +3,68 @@ import { Topic, TopicStatus, SubTopic } from '../models/topic.model';
 import { CodeSnippet } from '../models/code-snippet.model';
 import { Exam } from '../models/exam.model';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { SupabaseService } from './supabase.service';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DataService {
-  private readonly TOPICS_KEY = 'java-topics';
-  private readonly SNIPPETS_KEY = 'code-snippets';
-  private readonly EXAMS_KEY = 'java-exams';
-
   private topicsSubject: BehaviorSubject<Topic[]>;
   private snippetsSubject: BehaviorSubject<CodeSnippet[]>;
   private examsSubject: BehaviorSubject<Exam[]>;
 
-  constructor() {
-    const storedTopics = this.loadTopics();
-    const storedSnippets = this.loadSnippets();
-    const storedExams = this.loadExams();
+  constructor(
+    private supabaseService: SupabaseService,
+    private authService: AuthService
+  ) {
+    this.topicsSubject = new BehaviorSubject<Topic[]>([]);
+    this.snippetsSubject = new BehaviorSubject<CodeSnippet[]>([]);
+    this.examsSubject = new BehaviorSubject<Exam[]>([]);
 
-    this.topicsSubject = new BehaviorSubject<Topic[]>(storedTopics.length > 0 ? storedTopics : this.getInitialTopics());
-    this.snippetsSubject = new BehaviorSubject<CodeSnippet[]>(storedSnippets);
-    this.examsSubject = new BehaviorSubject<Exam[]>(storedExams);
-
-    // Save initial data if none exists
-    if (storedTopics.length === 0) {
-      this.saveTopics(this.topicsSubject.value);
-    }
+    // Cargar datos cuando el usuario inicia sesión
+    this.authService.currentUser.subscribe(async (user) => {
+      if (user) {
+        await this.loadAllData();
+      } else {
+        // Limpiar datos cuando cierra sesión
+        this.topicsSubject.next([]);
+        this.snippetsSubject.next([]);
+        this.examsSubject.next([]);
+      }
+    });
   }
 
-  // Topics methods
+  private async loadAllData(): Promise<void> {
+    await Promise.all([
+      this.loadTopicsFromSupabase(),
+      this.loadSnippetsFromSupabase(),
+      this.loadExamsFromSupabase()
+    ]);
+  }
+
+  // ==================== TOPICS ====================
+
   getTopics(): Observable<Topic[]> {
     return this.topicsSubject.asObservable();
   }
 
-  updateTopicStatus(topicId: string, status: TopicStatus): void {
+  async updateTopicStatus(topicId: string, status: TopicStatus): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    // Actualizar en Supabase
+    const { error } = await this.supabaseService.client
+      .from('topics')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', topicId)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error updating topic:', error);
+      return;
+    }
+
+    // Actualizar localmente
     const topics = this.topicsSubject.value.map(topic => {
       if (topic.id === topicId) {
         return { ...topic, status };
@@ -44,10 +72,24 @@ export class DataService {
       return topic;
     });
     this.topicsSubject.next(topics);
-    this.saveTopics(topics);
   }
 
-  updateSubTopicStatus(topicId: string, subTopicId: string, status: TopicStatus): void {
+  async updateSubTopicStatus(topicId: string, subTopicId: string, status: TopicStatus): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    // Actualizar en Supabase
+    const { error } = await this.supabaseService.client
+      .from('topics')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', subTopicId)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error updating subtopic:', error);
+      return;
+    }
+
+    // Actualizar localmente
     const topics = this.topicsSubject.value.map(topic => {
       if (topic.id === topicId && topic.subTopics) {
         const updatedSubTopics = topic.subTopics.map(subTopic => {
@@ -61,106 +103,337 @@ export class DataService {
       return topic;
     });
     this.topicsSubject.next(topics);
-    this.saveTopics(topics);
   }
 
-  addTopic(topic: Topic): void {
+  async addTopic(topic: Topic): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('topics')
+      .insert({
+        id: topic.id,
+        user_id: this.authService.currentUserValue.id,
+        number: topic.number,
+        title: topic.title,
+        status: topic.status,
+        parent_id: null
+      });
+
+    if (error) {
+      console.error('Error adding topic:', error);
+      return;
+    }
+
     const topics = [...this.topicsSubject.value, topic];
     this.topicsSubject.next(topics);
-    this.saveTopics(topics);
   }
 
-  // Code snippets methods
+  private async loadTopicsFromSupabase(): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { data, error } = await this.supabaseService.client
+      .from('topics')
+      .select('*')
+      .eq('user_id', this.authService.currentUserValue.id)
+      .order('number', { ascending: true });
+
+    if (error) {
+      console.error('Error loading topics:', error);
+      // Si no hay datos, inicializar con topics por defecto
+      await this.initializeDefaultTopics();
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      await this.initializeDefaultTopics();
+      return;
+    }
+
+    // Reconstruir jerarquía
+    const topicsMap = new Map<string, Topic>();
+    const rootTopics: Topic[] = [];
+
+    data.forEach((row: any) => {
+      if (!row.parent_id) {
+        topicsMap.set(row.id, {
+          id: row.id,
+          number: row.number,
+          title: row.title,
+          status: row.status as TopicStatus,
+          subTopics: []
+        });
+      }
+    });
+
+    data.forEach((row: any) => {
+      if (row.parent_id) {
+        const parent = topicsMap.get(row.parent_id);
+        if (parent) {
+          if (!parent.subTopics) {
+            parent.subTopics = [];
+          }
+          parent.subTopics.push({
+            id: row.id,
+            title: row.title,
+            status: row.status as TopicStatus
+          });
+        }
+      }
+    });
+
+    topicsMap.forEach((topic) => {
+      rootTopics.push(topic);
+    });
+
+    this.topicsSubject.next(rootTopics);
+  }
+
+  private async initializeDefaultTopics(): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const initialTopics = this.getInitialTopics();
+    const flatTopics: any[] = [];
+
+    initialTopics.forEach(topic => {
+      flatTopics.push({
+        id: topic.id,
+        user_id: this.authService.currentUserValue!.id,
+        number: topic.number,
+        title: topic.title,
+        status: topic.status,
+        parent_id: null
+      });
+
+      if (topic.subTopics) {
+        topic.subTopics.forEach(subTopic => {
+          flatTopics.push({
+            id: subTopic.id,
+            user_id: this.authService.currentUserValue!.id,
+            number: null,
+            title: subTopic.title,
+            status: subTopic.status,
+            parent_id: topic.id
+          });
+        });
+      }
+    });
+
+    const { error } = await this.supabaseService.client
+      .from('topics')
+      .insert(flatTopics);
+
+    if (error) {
+      console.error('Error initializing topics:', error);
+      return;
+    }
+
+    this.topicsSubject.next(initialTopics);
+  }
+
+  // ==================== CODE SNIPPETS ====================
+
   getSnippets(): Observable<CodeSnippet[]> {
     return this.snippetsSubject.asObservable();
   }
 
-  addSnippet(snippet: CodeSnippet): void {
+  async addSnippet(snippet: CodeSnippet): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('code_snippets')
+      .insert({
+        id: snippet.id,
+        user_id: this.authService.currentUserValue.id,
+        topic_id: snippet.topicId,
+        title: snippet.title,
+        code: snippet.code,
+        description: snippet.description
+      });
+
+    if (error) {
+      console.error('Error adding snippet:', error);
+      return;
+    }
+
     const snippets = [...this.snippetsSubject.value, snippet];
     this.snippetsSubject.next(snippets);
-    this.saveSnippets(snippets);
   }
 
-  updateSnippet(snippet: CodeSnippet): void {
+  async updateSnippet(snippet: CodeSnippet): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('code_snippets')
+      .update({
+        topic_id: snippet.topicId,
+        title: snippet.title,
+        code: snippet.code,
+        description: snippet.description,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', snippet.id)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error updating snippet:', error);
+      return;
+    }
+
     const snippets = this.snippetsSubject.value.map(s =>
       s.id === snippet.id ? snippet : s
     );
     this.snippetsSubject.next(snippets);
-    this.saveSnippets(snippets);
   }
 
-  deleteSnippet(id: string): void {
+  async deleteSnippet(id: string): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('code_snippets')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error deleting snippet:', error);
+      return;
+    }
+
     const snippets = this.snippetsSubject.value.filter(s => s.id !== id);
     this.snippetsSubject.next(snippets);
-    this.saveSnippets(snippets);
   }
 
   getSnippetsByTopic(topicId: string): CodeSnippet[] {
     return this.snippetsSubject.value.filter(s => s.topicId === topicId);
   }
 
-  // Local storage methods
-  private saveTopics(topics: Topic[]): void {
-    localStorage.setItem(this.TOPICS_KEY, JSON.stringify(topics));
+  private async loadSnippetsFromSupabase(): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { data, error } = await this.supabaseService.client
+      .from('code_snippets')
+      .select('*')
+      .eq('user_id', this.authService.currentUserValue.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading snippets:', error);
+      return;
+    }
+
+    const snippets = (data || []).map((row: any) => ({
+      id: row.id,
+      topicId: row.topic_id,
+      title: row.title,
+      code: row.code,
+      description: row.description,
+      createdAt: new Date(row.created_at)
+    }));
+
+    this.snippetsSubject.next(snippets);
   }
 
-  private loadTopics(): Topic[] {
-    const data = localStorage.getItem(this.TOPICS_KEY);
-    return data ? JSON.parse(data) : [];
-  }
+  // ==================== EXAMS ====================
 
-  private saveSnippets(snippets: CodeSnippet[]): void {
-    localStorage.setItem(this.SNIPPETS_KEY, JSON.stringify(snippets));
-  }
-
-  private loadSnippets(): CodeSnippet[] {
-    const data = localStorage.getItem(this.SNIPPETS_KEY);
-    return data ? JSON.parse(data) : [];
-  }
-
-  // Exams methods
   getExams(): Observable<Exam[]> {
     return this.examsSubject.asObservable();
   }
 
-  addExam(exam: Exam): void {
+  async addExam(exam: Exam): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('exams')
+      .insert({
+        id: exam.id,
+        user_id: this.authService.currentUserValue.id,
+        unit: exam.unit,
+        topics: exam.topics,
+        exam_date: exam.examDate.toISOString(),
+        grade: exam.grade
+      });
+
+    if (error) {
+      console.error('Error adding exam:', error);
+      return;
+    }
+
     const exams = [...this.examsSubject.value, exam];
     this.examsSubject.next(exams);
-    this.saveExams(exams);
   }
 
-  updateExam(exam: Exam): void {
+  async updateExam(exam: Exam): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('exams')
+      .update({
+        unit: exam.unit,
+        topics: exam.topics,
+        exam_date: exam.examDate.toISOString(),
+        grade: exam.grade,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', exam.id)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error updating exam:', error);
+      return;
+    }
+
     const exams = this.examsSubject.value.map(e =>
       e.id === exam.id ? exam : e
     );
     this.examsSubject.next(exams);
-    this.saveExams(exams);
   }
 
-  deleteExam(id: string): void {
+  async deleteExam(id: string): Promise<void> {
+    if (!this.authService.currentUserValue) return;
+
+    const { error } = await this.supabaseService.client
+      .from('exams')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', this.authService.currentUserValue.id);
+
+    if (error) {
+      console.error('Error deleting exam:', error);
+      return;
+    }
+
     const exams = this.examsSubject.value.filter(e => e.id !== id);
     this.examsSubject.next(exams);
-    this.saveExams(exams);
   }
 
-  private saveExams(exams: Exam[]): void {
-    localStorage.setItem(this.EXAMS_KEY, JSON.stringify(exams));
-  }
+  private async loadExamsFromSupabase(): Promise<void> {
+    if (!this.authService.currentUserValue) return;
 
-  private loadExams(): Exam[] {
-    const data = localStorage.getItem(this.EXAMS_KEY);
-    if (!data) return [];
+    const { data, error } = await this.supabaseService.client
+      .from('exams')
+      .select('*')
+      .eq('user_id', this.authService.currentUserValue.id)
+      .order('exam_date', { ascending: false });
 
-    const exams = JSON.parse(data);
-    // Convert date strings back to Date objects
-    return exams.map((exam: any) => ({
-      ...exam,
-      examDate: new Date(exam.examDate),
-      createdAt: new Date(exam.createdAt)
+    if (error) {
+      console.error('Error loading exams:', error);
+      return;
+    }
+
+    const exams = (data || []).map((row: any) => ({
+      id: row.id,
+      unit: row.unit,
+      topics: row.topics,
+      examDate: new Date(row.exam_date),
+      grade: row.grade,
+      createdAt: new Date(row.created_at)
     }));
+
+    this.examsSubject.next(exams);
   }
 
-  // Initial data
+  // ==================== INITIAL DATA ====================
+
   private getInitialTopics(): Topic[] {
     return [
       {

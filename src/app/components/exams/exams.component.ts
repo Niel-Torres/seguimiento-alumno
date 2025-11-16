@@ -48,7 +48,7 @@ export class ExamsComponent implements OnInit {
     };
   }
 
-  addExam(): void {
+  async addExam(): Promise<void> {
     if (this.newExam.unit && this.newExam.topics && this.newExam.examDate) {
       const exam: Exam = {
         id: Date.now().toString(),
@@ -59,7 +59,7 @@ export class ExamsComponent implements OnInit {
         createdAt: new Date()
       };
 
-      this.dataService.addExam(exam);
+      await this.dataService.addExam(exam);
       this.hideAddExamForm();
     }
   }
@@ -75,7 +75,7 @@ export class ExamsComponent implements OnInit {
     };
   }
 
-  updateExam(): void {
+  async updateExam(): Promise<void> {
     if (this.editingExam && this.newExam.unit && this.newExam.topics && this.newExam.examDate) {
       const updatedExam: Exam = {
         ...this.editingExam,
@@ -85,15 +85,15 @@ export class ExamsComponent implements OnInit {
         grade: this.newExam.grade
       };
 
-      this.dataService.updateExam(updatedExam);
+      await this.dataService.updateExam(updatedExam);
       this.hideAddExamForm();
       this.editingExam = null;
     }
   }
 
-  deleteExam(id: string): void {
+  async deleteExam(id: string): Promise<void> {
     if (confirm('¿Estas segura de que quieres eliminar este examen?')) {
-      this.dataService.deleteExam(id);
+      await this.dataService.deleteExam(id);
     }
   }
 

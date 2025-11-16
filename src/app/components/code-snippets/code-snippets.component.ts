@@ -119,7 +119,7 @@ export class CodeSnippetsComponent implements OnInit, AfterViewChecked {
     };
   }
 
-  addSnippet(): void {
+  async addSnippet(): Promise<void> {
     if (this.newSnippet.topicId && this.newSnippet.title && this.newSnippet.code) {
       const snippet: CodeSnippet = {
         id: Date.now().toString(),
@@ -130,7 +130,7 @@ export class CodeSnippetsComponent implements OnInit, AfterViewChecked {
         createdAt: new Date()
       };
 
-      this.dataService.addSnippet(snippet);
+      await this.dataService.addSnippet(snippet);
       this.hideAddSnippetForm();
     }
   }
@@ -146,7 +146,7 @@ export class CodeSnippetsComponent implements OnInit, AfterViewChecked {
     };
   }
 
-  updateSnippet(): void {
+  async updateSnippet(): Promise<void> {
     if (this.editingSnippet && this.newSnippet.topicId && this.newSnippet.title && this.newSnippet.code) {
       const updatedSnippet: CodeSnippet = {
         ...this.editingSnippet,
@@ -156,15 +156,15 @@ export class CodeSnippetsComponent implements OnInit, AfterViewChecked {
         description: this.newSnippet.description
       };
 
-      this.dataService.updateSnippet(updatedSnippet);
+      await this.dataService.updateSnippet(updatedSnippet);
       this.hideAddSnippetForm();
       this.editingSnippet = null;
     }
   }
 
-  deleteSnippet(id: string): void {
+  async deleteSnippet(id: string): Promise<void> {
     if (confirm('¿Estas segura de que quieres eliminar este fragmento de codigo?')) {
-      this.dataService.deleteSnippet(id);
+      await this.dataService.deleteSnippet(id);
     }
   }
 

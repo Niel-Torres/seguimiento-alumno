@@ -1,4 +1,7 @@
 import { Component } from '@angular/core';
+import { AuthService } from './services/auth.service';
+import { Observable } from 'rxjs';
+import { User } from '@supabase/supabase-js';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +10,13 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'java-progress-tracker';
+  currentUser$: Observable<User | null>;
+
+  constructor(public authService: AuthService) {
+    this.currentUser$ = this.authService.currentUser;
+  }
+
+  async logout(): Promise<void> {
+    await this.authService.signOut();
+  }
 }

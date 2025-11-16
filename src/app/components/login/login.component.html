@@ -1,0 +1,83 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="logo">
+      <h1>Mi avance en Java</h1>
+      <p class="subtitle">Kate</p>
+    </div>
+
+    <div class="tabs">
+      <button
+        class="tab"
+        [class.active]="!isSignUp"
+        (click)="isSignUp = false">
+        Iniciar Sesión
+      </button>
+      <button
+        class="tab"
+        [class.active]="isSignUp"
+        (click)="isSignUp = true">
+        Registrarse
+      </button>
+    </div>
+
+    <form (ngSubmit)="isSignUp ? signUp() : signIn()">
+      <div class="form-group">
+        <label for="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          [(ngModel)]="email"
+          name="email"
+          placeholder="tu@email.com"
+          required
+          autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Contraseña:</label>
+        <input
+          type="password"
+          id="password"
+          [(ngModel)]="password"
+          name="password"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+          minlength="6">
+        <small *ngIf="isSignUp">Mínimo 6 caracteres</small>
+      </div>
+
+      <div *ngIf="errorMessage" class="error-message">
+        {{ errorMessage }}
+      </div>
+
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
+
+      <button
+        type="submit"
+        class="btn-submit"
+        [disabled]="loading">
+        <span *ngIf="!loading">{{ isSignUp ? 'Crear Cuenta' : 'Entrar' }}</span>
+        <span *ngIf="loading">Cargando...</span>
+      </button>
+    </form>
+
+    <div class="extra-info" *ngIf="!isSignUp">
+      <p class="help-text">
+        Usa este sistema para seguir tu progreso en Java.<br>
+        Tus datos se sincronizan automáticamente en todos tus dispositivos.
+      </p>
+    </div>
+
+    <div class="extra-info" *ngIf="isSignUp">
+      <p class="help-text">
+        Al crear una cuenta, podrás:<br>
+        ✓ Guardar tu progreso en la nube<br>
+        ✓ Acceder desde cualquier dispositivo<br>
+        ✓ No perder nunca tus datos
+      </p>
+    </div>
+  </div>
+</div>

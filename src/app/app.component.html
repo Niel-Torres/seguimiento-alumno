@@ -1,6 +1,11 @@
-<div class="container">
-  <header>
-    <h1>Mi avance en Java - Kate</h1>
+<div class="container" [class.no-header]="!(currentUser$ | async)">
+  <header *ngIf="currentUser$ | async">
+    <div class="header-content">
+      <h1>Mi avance en Java - Kate</h1>
+      <button class="btn-logout" (click)="logout()" title="Cerrar sesión">
+        Salir
+      </button>
+    </div>
     <nav>
       <a routerLink="/progress" routerLinkActive="active">Seguimiento de Progreso</a>
       <a routerLink="/code-snippets" routerLinkActive="active">Fragmentos de Codigo</a>

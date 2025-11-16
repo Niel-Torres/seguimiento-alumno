@@ -7,13 +7,15 @@ import { AppComponent } from './app.component';
 import { ProgressTrackerComponent } from './components/progress-tracker/progress-tracker.component';
 import { CodeSnippetsComponent } from './components/code-snippets/code-snippets.component';
 import { ExamsComponent } from './components/exams/exams.component';
+import { LoginComponent } from './components/login/login.component';
 
 @NgModule({
   declarations: [
     AppComponent,
     ProgressTrackerComponent,
     CodeSnippetsComponent,
-    ExamsComponent
+    ExamsComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,

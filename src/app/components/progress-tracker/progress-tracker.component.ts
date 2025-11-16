@@ -45,7 +45,7 @@ export class ProgressTrackerComponent implements OnInit {
     }
   }
 
-  cycleTopicStatus(topicId: string, currentStatus: TopicStatus): void {
+  async cycleTopicStatus(topicId: string, currentStatus: TopicStatus): Promise<void> {
     let newStatus: TopicStatus;
 
     switch (currentStatus) {
@@ -62,10 +62,10 @@ export class ProgressTrackerComponent implements OnInit {
         newStatus = TopicStatus.NOT_STARTED;
     }
 
-    this.dataService.updateTopicStatus(topicId, newStatus);
+    await this.dataService.updateTopicStatus(topicId, newStatus);
   }
 
-  cycleSubTopicStatus(topicId: string, subTopicId: string, currentStatus: TopicStatus): void {
+  async cycleSubTopicStatus(topicId: string, subTopicId: string, currentStatus: TopicStatus): Promise<void> {
     let newStatus: TopicStatus;
 
     switch (currentStatus) {
@@ -82,6 +82,6 @@ export class ProgressTrackerComponent implements OnInit {
         newStatus = TopicStatus.NOT_STARTED;
     }
 
-    this.dataService.updateSubTopicStatus(topicId, subTopicId, newStatus);
+    await this.dataService.updateSubTopicStatus(topicId, subTopicId, newStatus);
   }
 }
