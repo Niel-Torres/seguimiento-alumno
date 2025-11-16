@@ -5,6 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:prod": "ng build --configuration production --base-href /seguimiento-alumno/",
+    "deploy": "ng build --configuration production --base-href /seguimiento-alumno/ && npx angular-cli-ghpages --dir=dist/java-progress-tracker",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -30,6 +32,7 @@
     "@angular/compiler-cli": "^14.2.0",
     "@types/jasmine": "~4.0.0",
     "@types/node": "^18.19.130",
+    "angular-cli-ghpages": "^2.0.3",
     "jasmine-core": "~4.3.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.1.0",
