@@ -1,0 +1,81 @@
+<div class="exams">
+  <div class="header">
+    <h2>Examenes de Java</h2>
+    <button class="btn-primary" (click)="showAddExamForm()">+ Agregar Examen</button>
+  </div>
+
+  <div *ngIf="showAddForm" class="exam-form">
+    <h3>{{ editingExam ? 'Editar' : 'Nuevo' }} Examen</h3>
+
+    <div class="form-group">
+      <label for="unit">Unidad:</label>
+      <input type="text" id="unit" [(ngModel)]="newExam.unit" placeholder="Ej: Unidad 1" required>
+    </div>
+
+    <div class="form-group">
+      <label for="topics">Temas que entran:</label>
+      <textarea id="topics" [(ngModel)]="newExam.topics" rows="3" placeholder="Ej: Variables, Condicionales simples, Condicionales dobles..." required></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="examDate">Fecha del Examen:</label>
+      <input type="date" id="examDate" [(ngModel)]="newExam.examDate" required>
+    </div>
+
+    <div class="form-group">
+      <label for="grade">Nota (opcional):</label>
+      <input type="number" id="grade" [(ngModel)]="newExam.grade" min="0" max="10" step="0.1" placeholder="Ej: 7.5">
+      <small>Puedes dejar esto en blanco si aun no has hecho el examen</small>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" (click)="editingExam ? updateExam() : addExam()">
+        {{ editingExam ? 'Actualizar' : 'Guardar' }}
+      </button>
+      <button class="btn-secondary" (click)="hideAddExamForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="exams-table-container">
+    <div *ngIf="(exams$ | async)?.length === 0" class="empty-state">
+      <p>No hay examenes aun. Haz clic en "Agregar Examen" para empezar.</p>
+    </div>
+
+    <table *ngIf="(exams$ | async)?.length! > 0" class="exams-table">
+      <thead>
+        <tr>
+          <th>Unidad</th>
+          <th>Temas</th>
+          <th>Fecha</th>
+          <th>Nota</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let exam of exams$ | async"
+            [class.exam-today]="isExamToday(exam.examDate)"
+            [class.exam-soon]="isExamSoon(exam.examDate)"
+            [class.exam-past]="isExamPast(exam.examDate) && !exam.grade">
+          <td class="unit-cell" data-label="Unidad">
+            <strong>{{ exam.unit }}</strong>
+            <span *ngIf="isExamToday(exam.examDate)" class="date-badge today">HOY</span>
+            <span *ngIf="isExamSoon(exam.examDate)" class="date-badge soon">PRÓXIMO</span>
+          </td>
+          <td class="topics-cell" data-label="Temas">{{ exam.topics }}</td>
+          <td class="date-cell" data-label="Fecha">{{ formatDate(exam.examDate) }}</td>
+          <td class="grade-cell" data-label="Nota">
+            <span class="grade-badge" [class]="getGradeStatus(exam.grade)">
+              <span class="status-icon">{{ getStatusIcon(getGradeStatus(exam.grade)) }}</span>
+              <span *ngIf="exam.grade !== undefined && exam.grade !== null">{{ exam.grade }} - {{ getStatusText(getGradeStatus(exam.grade)) }}</span>
+              <span *ngIf="exam.grade === undefined || exam.grade === null">Pendiente</span>
+            </span>
+          </td>
+          <td class="actions-cell" data-label="Acciones">
+            <button class="btn-icon-small" (click)="editExam(exam)" title="Editar">✏️</button>
+            <button class="btn-icon-small" (click)="deleteExam(exam.id)" title="Eliminar">🗑️</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

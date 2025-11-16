@@ -1,0 +1,76 @@
+<div class="code-snippets">
+  <div class="header">
+    <h2>Fragmentos de Codigo</h2>
+    <button class="btn-primary" (click)="showAddSnippetForm()">+ Agregar Fragmento</button>
+  </div>
+
+  <div *ngIf="showAddForm" class="snippet-form">
+    <h3>{{ editingSnippet ? 'Editar' : 'Nuevo' }} Fragmento de Codigo</h3>
+
+    <div class="form-group">
+      <label for="topic">Tema:</label>
+      <select id="topic" [(ngModel)]="newSnippet.topicId" required>
+        <option value="">Selecciona un tema</option>
+        <option *ngFor="let topic of getAllTopicsAndSubTopics(topics$ | async)" [value]="topic.id">
+          {{ topic.title }}
+        </option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="title">Titulo:</label>
+      <input type="text" id="title" [(ngModel)]="newSnippet.title" placeholder="Ej: Ejemplo de if-else" required>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Descripcion (opcional):</label>
+      <textarea id="description" [(ngModel)]="newSnippet.description" rows="2" placeholder="Breve descripcion del codigo"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="code">Codigo:</label>
+      <textarea id="code" [(ngModel)]="newSnippet.code" rows="10" placeholder="Pega tu codigo Java aqui..." required></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-primary" (click)="editingSnippet ? updateSnippet() : addSnippet()">
+        {{ editingSnippet ? 'Actualizar' : 'Guardar' }}
+      </button>
+      <button class="btn-secondary" (click)="hideAddSnippetForm()">Cancelar</button>
+    </div>
+  </div>
+
+  <div class="snippets-list">
+    <div *ngIf="(groupedSnippets$ | async)?.length === 0" class="empty-state">
+      <p>No hay fragmentos de codigo aun. Haz clic en "Agregar Fragmento" para empezar.</p>
+    </div>
+
+    <div *ngFor="let group of groupedSnippets$ | async" class="topic-group">
+      <div class="topic-group-header" (click)="toggleGroup(group)">
+        <div class="topic-group-title">
+          <span class="collapse-icon">{{ group.collapsed ? '▶' : '▼' }}</span>
+          <h3>{{ group.topicTitle }}</h3>
+          <span class="snippet-count">({{ group.snippets.length }})</span>
+        </div>
+      </div>
+
+      <div class="topic-group-content" [class.collapsed]="group.collapsed">
+        <div *ngFor="let snippet of group.snippets" class="snippet-card">
+          <div class="snippet-header">
+            <div>
+              <h4>{{ snippet.title }}</h4>
+            </div>
+            <div class="snippet-actions">
+              <button class="btn-icon" (click)="editSnippet(snippet)" title="Editar">✏️</button>
+              <button class="btn-icon" (click)="deleteSnippet(snippet.id)" title="Eliminar">🗑️</button>
+            </div>
+          </div>
+
+          <p *ngIf="snippet.description" class="snippet-description">{{ snippet.description }}</p>
+
+          <pre class="code-block"><code class="language-java">{{ snippet.code }}</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

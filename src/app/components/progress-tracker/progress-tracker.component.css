@@ -1,0 +1,167 @@
+.progress-tracker {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  color: #333;
+  margin: 0 0 1rem 0;
+  font-size: 1.75rem;
+}
+
+.instructions {
+  color: #666;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.legend {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem 0;
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.topics-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.topic-item {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1rem;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.topic-item:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.topic-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+  user-select: none;
+}
+
+.topic-header:hover {
+  background: #f8f9fa;
+}
+
+.status-icon {
+  font-size: 1.5rem;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.topic-header:hover .status-icon {
+  transform: scale(1.2);
+}
+
+.status-icon.not-started {
+  color: #ccc;
+}
+
+.status-icon.in-progress {
+  color: #ffa500;
+}
+
+.status-icon.completed {
+  color: #4caf50;
+}
+
+.topic-number {
+  font-weight: 600;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.topic-title {
+  font-size: 1.1rem;
+  color: #333;
+  font-weight: 500;
+}
+
+.subtopics-list {
+  margin-top: 0.75rem;
+  padding-left: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.subtopic-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.subtopic-item:hover {
+  background: #f0f0f0;
+}
+
+.subtopic-item .status-icon {
+  font-size: 1.2rem;
+}
+
+.subtopic-title {
+  color: #555;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 768px) {
+  .progress-tracker {
+    padding: 1rem;
+  }
+
+  .topics-list {
+    grid-template-columns: 1fr;
+  }
+
+  .legend {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .topic-header {
+    flex-wrap: wrap;
+  }
+
+  .subtopics-list {
+    padding-left: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+}

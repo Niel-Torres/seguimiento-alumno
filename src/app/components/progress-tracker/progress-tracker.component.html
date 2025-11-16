@@ -1,0 +1,32 @@
+<div class="progress-tracker">
+  <h2>Temario de Java</h2>
+  <p class="instructions">Haz clic en los simbolos para cambiar el estado:</p>
+  <ul class="legend">
+    <li><span class="status-icon not-started">○</span> No iniciado</li>
+    <li><span class="status-icon in-progress">●</span> En progreso</li>
+    <li><span class="status-icon completed">✓</span> Completado</li>
+  </ul>
+
+  <div class="topics-list">
+    <div *ngFor="let topic of topics$ | async" class="topic-item">
+      <div class="topic-header" (click)="cycleTopicStatus(topic.id, topic.status)">
+        <span class="status-icon" [ngClass]="getStatusClass(topic.status)">
+          {{ getStatusIcon(topic.status) }}
+        </span>
+        <span class="topic-number">{{ topic.number }}.</span>
+        <span class="topic-title">{{ topic.title }}</span>
+      </div>
+
+      <div *ngIf="topic.subTopics && topic.subTopics.length > 0" class="subtopics-list">
+        <div *ngFor="let subTopic of topic.subTopics"
+             class="subtopic-item"
+             (click)="cycleSubTopicStatus(topic.id, subTopic.id, subTopic.status)">
+          <span class="status-icon" [ngClass]="getStatusClass(subTopic.status)">
+            {{ getStatusIcon(subTopic.status) }}
+          </span>
+          <span class="subtopic-title">{{ subTopic.title }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
